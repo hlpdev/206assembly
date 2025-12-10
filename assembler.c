@@ -114,6 +114,16 @@ static uint8_t op_sub(const char* a, const char* b)
     return (uint8_t)(0b00010000 | (reg_encode(a) << 2) | reg_encode(b));
 }
 
+static uint8_t op_mul(const char* a, const char* b)
+{
+    return (uint8_t)(0b00100000 | (reg_encode(a) << 2) | reg_encode(b));
+}
+
+static uint8_t op_div(const char* a, const char* b)
+{
+    return (uint8_t)(0b00110000 | (reg_encode(a) << 2) | reg_encode(b));
+}
+
 static uint8_t op_skipnz(const char* a) { return (uint8_t)(0b01000000 | (reg_encode(a) << 2)); }
 
 static uint8_t op_jmp(int addr)
@@ -261,6 +271,22 @@ static void second_pass(Source* src, LabelTable* table, const char* outpath)
         {
             sscanf(p, "%*s %31s %31s", a, b);
             uint8_t byte = op_sub(a, b);
+            fwrite(&byte, 1, 1, out);
+            continue;
+        }
+
+        if (strcmp(op, "MUL") == 0)
+        {
+            sscanf(p, "%*s %31s %31s", a, b);
+            uint8_t byte = op_mul(a, b);
+            fwrite(&byte, 1, 1, out);
+            continue;
+        }
+
+        if (strcmp(op, "DIV") == 0)
+        {
+            sscanf(p, "%*s %31s %31s", a, b);
+            uint8_t byte = op_div(a, b);
             fwrite(&byte, 1, 1, out);
             continue;
         }
