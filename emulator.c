@@ -7,6 +7,8 @@ enum
 {
     OPCODE_ADD = 0b01110000,
     OPCODE_SUB = 0b00010000,
+    OPCODE_MUL = 0b00100000,
+    OPCODE_DIV = 0b00110000,
     OPCODE_SKIPNZ = 0b01000000,
     OPCODE_JMP = 0b10000000,
     OPCODE_LDI = 0b11000000,
@@ -71,6 +73,16 @@ static void execute_sub(struct CPU* cpu, uint8_t op)
     *register_ptr(cpu, get_rd(op)) -= *register_ptr(cpu, get_rs(op));
 }
 
+static void execute_mul(struct CPU* cpu, uint8_t op)
+{
+    *register_ptr(cpu, get_rd(op)) *= *register_ptr(cpu, get_rs(op));
+}
+
+static void execute_div(struct CPU* cpu, uint8_t op)
+{
+    *register_ptr(cpu, get_rd(op)) /= *register_ptr(cpu, get_rs(op));
+}
+
 static void execute_skipnz(struct CPU* cpu, uint8_t op)
 {
     if (*register_ptr(cpu, get_rd(op)) != 0)
@@ -133,6 +145,12 @@ void run_program(struct CPU* cpu, struct Memory* mem)
                 break;
             case OPCODE_SUB:
                 execute_sub(cpu, op);
+                break;
+            case OPCODE_MUL:
+                execute_mul(cpu, op);
+                break;
+            case OPCODE_DIV:
+                execute_div(cpu, op);
                 break;
             case OPCODE_SKIPNZ:
                 execute_skipnz(cpu, op);
