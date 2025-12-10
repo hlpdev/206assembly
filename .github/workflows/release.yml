@@ -1,0 +1,77 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build assembler
+        run: |
+          cc -O2 assembler.c -o assembler
+
+      - name: Build emulator
+        run: |
+          cc -O2 emulator.c -o emulator
+
+      - name: Rename binaries for Windows
+        if: runner.os == 'Windows'
+        run: |
+          ren assembler assembler.exe
+          ren emulator emulator.exe
+
+      - name: Create archive (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          powershell Compress-Archive `
+            -Path assembler.exe,emulator.exe `
+            -DestinationPath windows.zip
+
+      - name: Create archive (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          tar -czvf linux.tar.gz assembler emulator
+
+      - name: Create archive (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          zip macos.zip assembler emulator
+
+      - name: Upload Release Assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: asm206-${{ runner.os }}
+          path: |
+            *.zip
+            *.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
