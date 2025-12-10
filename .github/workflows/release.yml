@@ -1,77 +1,52 @@
-name: Build and Release
+name: Build & Release ASM206
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build assembler
+      - name: Build
         run: |
-          cc -O2 assembler.c -o assembler
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            cc assembler.c -o assembler.exe
+            cc emulator.c  -o emulator.exe
+          else
+            cc assembler.c -o assembler
+            cc emulator.c  -o emulator
+          fi
+        shell: bash
 
-      - name: Build emulator
-        run: |
-          cc -O2 emulator.c -o emulator
-
-      - name: Rename binaries for Windows
+      - name: Package Windows
         if: runner.os == 'Windows'
         run: |
-          ren assembler assembler.exe
-          ren emulator emulator.exe
+          powershell Compress-Archive -Path assembler.exe, emulator.exe -DestinationPath windows.zip
 
-      - name: Create archive (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          powershell Compress-Archive `
-            -Path assembler.exe,emulator.exe `
-            -DestinationPath windows.zip
-
-      - name: Create archive (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          tar -czvf linux.tar.gz assembler emulator
-
-      - name: Create archive (macOS)
+      - name: Package macOS
         if: runner.os == 'macOS'
         run: |
-          zip macos.zip assembler emulator
+          tar -czf macos.tar.gz assembler emulator
 
-      - name: Upload Release Assets
-        uses: actions/upload-artifact@v4
+      - name: Package Linux
+        if: runner.os == 'Linux'
+        run: |
+          tar -czf linux.tar.gz assembler emulator
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/heads/')
         with:
-          name: asm206-${{ runner.os }}
-          path: |
+          tag_name: latest
+          name: Latest Release
+          files: |
             *.zip
             *.tar.gz
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Publish Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/**/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
