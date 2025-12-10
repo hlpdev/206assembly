@@ -1,57 +1,71 @@
-name: Build and Release ASM206
+name: Build & Release ASM206
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
-    name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - os: windows-latest
+            build: |
+              cl /O2 /Feassembler.exe assembler.c
+              cl /O2 /Feemulator.exe emulator.c
+              Compress-Archive -Path assembler.exe, emulator.exe -DestinationPath windows.zip
+            artifact: windows.zip
+
+          - os: ubuntu-latest
+            build: |
+              cc -O2 assembler.c -o assembler
+              cc -O2 emulator.c -o emulator
+              tar -czvf linux.tar.gz assembler emulator
+            artifact: linux.tar.gz
+
+          - os: macos-latest
+            build: |
+              cc -O2 assembler.c -o assembler
+              cc -O2 emulator.c -o emulator
+              zip macos.zip assembler emulator
+            artifact: macos.zip
 
     steps:
+      - uses: actions/checkout@v4
 
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Build
+        shell: bash
+        run: ${{ matrix.build }}
 
-      - name: Build on Windows
-        if: runner.os == 'Windows'
-        run: |
-          gcc -O2 assembler.c -o assembler.exe
-          gcc -O2 emulator.c -o emulator.exe
-          tar -czvf windows.zip assembler.exe emulator.exe
-
-      - name: Build on Linux
-        if: runner.os == 'Linux'
-        run: |
-          gcc -O2 assembler.c -o assembler
-          gcc -O2 emulator.c -o emulator
-          chmod +x assembler emulator
-          tar -czvf linux.tar.gz assembler emulator
-
-      - name: Build on macOS
-        if: runner.os == 'macOS'
-        run: |
-          gcc -O2 assembler.c -o assembler
-          gcc -O2 emulator.c -o emulator
-          chmod +x assembler emulator
-          tar -czvf macos.tar.gz assembler emulator
-
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/heads/')
+      - uses: actions/upload-artifact@v4
         with:
-          tag_name: latest
-          name: Latest Release
+          name: release-${{ matrix.os }}
+          path: ${{ matrix.artifact }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: auto
+          name: Auto Release
           files: |
             windows.zip
             linux.tar.gz
-            macos.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            macos.zip
