@@ -1,71 +1,69 @@
-name: Build & Release ASM206
+name: build-release
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: write   # required for publishing release
 
 jobs:
   build:
+    name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - os: windows-latest
-            build: |
-              cl /O2 /Feassembler.exe assembler.c
-              cl /O2 /Feemulator.exe emulator.c
-              Compress-Archive -Path assembler.exe, emulator.exe -DestinationPath windows.zip
-            artifact: windows.zip
-
-          - os: ubuntu-latest
-            build: |
-              cc -O2 assembler.c -o assembler
-              cc -O2 emulator.c -o emulator
-              tar -czvf linux.tar.gz assembler emulator
-            artifact: linux.tar.gz
-
-          - os: macos-latest
-            build: |
-              cc -O2 assembler.c -o assembler
-              cc -O2 emulator.c -o emulator
-              zip macos.zip assembler emulator
-            artifact: macos.zip
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Build
-        shell: bash
-        run: ${{ matrix.build }}
+      - name: Build binaries
+        run: |
+          gcc -O2 assembler.c -o assembler${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+          gcc -O2 emulator.c -o emulator${{ matrix.os == 'windows-latest' && '.exe' || '' }}
 
-      - uses: actions/upload-artifact@v4
+      # Windows archive
+      - name: Archive (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          powershell Compress-Archive -Path assembler.exe, emulator.exe -DestinationPath windows.zip
+
+      # Linux archive
+      - name: Archive (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          tar -czvf linux.tar.gz assembler emulator
+
+      # macOS archive
+      - name: Archive (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          zip macos.zip assembler emulator
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: release-${{ matrix.os }}
-          path: ${{ matrix.artifact }}
+          name: ${{ matrix.os }}
+          path: |
+            *.zip
+            *.tar.gz
 
   publish:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          pattern: release-*
-          merge-multiple: true
+          path: dist
 
-      - name: Create Release
+      - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: auto
-          name: Auto Release
-          files: |
-            windows.zip
-            linux.tar.gz
-            macos.zip
+          tag_name: latest
+          files: dist/**/* 
