@@ -1,0 +1,26 @@
+{
+  "name": "asm206",
+  "displayName": "ASM206",
+  "version": "1.0.0",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.50.0"
+  },
+
+  "contributes": {
+    "languages": [
+      {
+        "id": "asm206",
+        "extensions": [".asm206"],
+        "aliases": ["ASM206"]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "asm206",
+        "scopeName": "source.asm206",
+        "path": "./syntaxes/asm206.tmLanguage.json"
+      }
+    ]
+  }
+}

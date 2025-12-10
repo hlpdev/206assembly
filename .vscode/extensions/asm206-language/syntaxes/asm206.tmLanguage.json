@@ -1,0 +1,38 @@
+{
+  "scopeName": "source.asm206",
+  "patterns": [
+    {
+      "name": "comment.line.semicolon.asm206",
+      "match": ";.*$"
+    },
+    {
+      "name": "comment.line.double-slash.asm206",
+      "match": "//.*$"
+    },
+
+    {
+      "name": "keyword.instruction.asm206",
+      "match": "(?i)\\b(?:LDI|ADD|SUB|SKIPNZ|JMP|HALT)\\b"
+    },
+
+    {
+      "name": "variable.other.register.asm206",
+      "match": "(?i)\\b(?:A|B|C|D)\\b"
+    },
+
+    {
+      "name": "entity.name.label.definition.asm206",
+      "match": "^(?i)[A-Za-z_][A-Za-z0-9_]*:"
+    },
+
+    {
+      "name": "entity.name.label.reference.asm206",
+      "match": "(?i)\\b(?!LDI|ADD|SUB|SKIPNZ|JMP|HALT)([A-Za-z_][A-Za-z0-9_]*)\\b"
+    },
+
+    {
+      "name": "constant.numeric.asm206",
+      "match": "\\b[0-9]+\\b"
+    }
+  ]
+}
