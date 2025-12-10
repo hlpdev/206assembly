@@ -2,6 +2,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Cross-platform secure wrappers
+#if defined(_WIN32) || defined(_WIN64)
+#include <stdio.h>
+#else
+#define fopen_s(fp, filename, mode) ((*(fp) = fopen((filename), (mode))) == NULL)
+#define sscanf_s sscanf
+#define fprintf_s fprintf
+#define strncpy_s(dest, destsz, src, count) strncpy((dest), (src), (destsz))
+#define _TRUNCATE 0  // ignored on non-Windows
+#endif
+
 #define TRUE 1
 #define FALSE 0
 typedef uint8_t bool;
