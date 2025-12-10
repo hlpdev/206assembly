@@ -4,22 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// _countof is defined by MSVC but this is here for portability
-#ifndef _countof
-#define _countof(_Array) (sizeof(_Array) / sizeof(_Array[0]))
-#endif
-
-// Cross-platform secure wrappers
-#if defined(_WIN32) || defined(_WIN64)
-#include <stdio.h>
-#else
-#define fopen_s(fp, filename, mode) ((*(fp) = fopen((filename), (mode))) == NULL)
-#define sscanf_s sscanf
-#define fprintf_s fprintf
-#define strncpy_s(dest, destsz, src, count) strncpy((dest), (src), (destsz))
-#define _TRUNCATE 0  // ignored on non-Windows
-#endif
-
 typedef struct
 {
     char name[64];
@@ -59,7 +43,7 @@ static char* trim_left(char* text)
 
 static void label_add(LabelTable* table, const char* name, int address)
 {
-    sscanf_s(name, "%63s", table->items[table->count].name, (unsigned)_countof(table->items[table->count].name));
+    sscanf(name, "%63s", table->items[table->count].name);
 
     table->items[table->count].address = address;
     table->count++;
@@ -75,7 +59,7 @@ static int label_find(LabelTable* table, const char* name)
         }
     }
 
-    fprintf_s(stderr, "Unknown label: %s\n", name);
+    fprintf(stderr, "Unknown label: %s\n", name);
     exit(1);
 }
 
@@ -101,7 +85,7 @@ static uint8_t reg_encode(const char* name)
         return 3;
     }
 
-    fprintf_s(stderr, "Unknown register %s\n", name);
+    fprintf(stderr, "Unknown register %s\n", name);
     exit(1);
 }
 
@@ -109,7 +93,7 @@ static uint8_t op_ldi(const char* rd, int imm)
 {
     if (imm < 0 || imm > 15)
     {
-        fprintf_s(stderr, "LDI immediate out of range: %d\n", imm);
+        fprintf(stderr, "LDI immediate out of range: %d\n", imm);
         exit(1);
     }
 
@@ -136,7 +120,7 @@ static uint8_t op_jmp(int addr)
 {
     if (addr < 0 || addr > 63)
     {
-        fprintf_s(stderr, "JMP address out of range: %d\n", addr);
+        fprintf(stderr, "JMP address out of range: %d\n", addr);
         exit(1);
     }
 
@@ -147,12 +131,10 @@ static uint8_t op_halt(void) { return 0x01; }
 
 static void load_source(Source* src, const char* path)
 {
-    FILE* f = NULL;
-    fopen_s(&f, path, "r");
-
+    FILE* f = fopen(path, "r");
     if (!f)
     {
-        fprintf_s(stderr, "Cannot open %s\n", path);
+        fprintf(stderr, "Cannot open %s\n", path);
         exit(1);
     }
 
@@ -171,7 +153,8 @@ static void first_pass(Source* src, LabelTable* table)
     for (int line = 0; line < src->count; ++line)
     {
         char buf[256] = {0};
-        strncpy_s(buf, sizeof(buf), src->lines[line], _TRUNCATE);
+        strncpy(buf, src->lines[line], sizeof(buf) - 1);
+        buf[sizeof(buf) - 1] = '\0';
 
         char* p = trim_left(buf);
 
@@ -200,7 +183,7 @@ static void first_pass(Source* src, LabelTable* table)
             *colon = '\0';
 
             char label_name[64] = {0};
-            sscanf_s(p, "%63s", label_name, (unsigned)_countof(label_name));
+            sscanf(p, "%63s", label_name);
             label_add(table, label_name, pc);
 
             continue;
@@ -212,12 +195,10 @@ static void first_pass(Source* src, LabelTable* table)
 
 static void second_pass(Source* src, LabelTable* table, const char* outpath)
 {
-    FILE* out = NULL;
-    fopen_s(&out, outpath, "wb");
-
+    FILE* out = fopen(outpath, "wb");
     if (!out)
     {
-        fprintf_s(stderr, "Cannot write %s\n", outpath);
+        fprintf(stderr, "Cannot write %s\n", outpath);
         exit(1);
     }
 
@@ -255,14 +236,14 @@ static void second_pass(Source* src, LabelTable* table, const char* outpath)
         char temp[32];
         int value;
 
-        if (sscanf_s(p, "%31s", op, (unsigned)_countof(op)) < 1)
+        if (sscanf(p, "%31s", op) < 1)
         {
             continue;
         }
 
         if (strcmp(op, "LDI") == 0)
         {
-            sscanf_s(p, "%*s %31s %d", a, (unsigned)_countof(a), &value);
+            sscanf(p, "%*s %31s %d", a, &value);
             uint8_t byte = op_ldi(a, value);
             fwrite(&byte, 1, 1, out);
             continue;
@@ -270,7 +251,7 @@ static void second_pass(Source* src, LabelTable* table, const char* outpath)
 
         if (strcmp(op, "ADD") == 0)
         {
-            sscanf_s(p, "%*s %31s %31s", a, (unsigned)_countof(a), b, (unsigned)_countof(b));
+            sscanf(p, "%*s %31s %31s", a, b);
             uint8_t byte = op_add(a, b);
             fwrite(&byte, 1, 1, out);
             continue;
@@ -278,7 +259,7 @@ static void second_pass(Source* src, LabelTable* table, const char* outpath)
 
         if (strcmp(op, "SUB") == 0)
         {
-            sscanf_s(p, "%*s %31s %31s", a, (unsigned)_countof(a), b, (unsigned)_countof(b));
+            sscanf(p, "%*s %31s %31s", a, b);
             uint8_t byte = op_sub(a, b);
             fwrite(&byte, 1, 1, out);
             continue;
@@ -286,7 +267,7 @@ static void second_pass(Source* src, LabelTable* table, const char* outpath)
 
         if (strcmp(op, "SKIPNZ") == 0)
         {
-            sscanf_s(p, "%*s %31s", a, (unsigned)_countof(a));
+            sscanf(p, "%*s %31s", a);
             uint8_t byte = op_skipnz(a);
             fwrite(&byte, 1, 1, out);
             continue;
@@ -294,7 +275,7 @@ static void second_pass(Source* src, LabelTable* table, const char* outpath)
 
         if (strcmp(op, "JMP") == 0)
         {
-            sscanf_s(p, "%*s %31s", temp, (unsigned)_countof(temp));
+            sscanf(p, "%*s %31s", temp);
 
             if (isdigit((unsigned char)temp[0]))
             {
@@ -317,7 +298,7 @@ static void second_pass(Source* src, LabelTable* table, const char* outpath)
             continue;
         }
 
-        fprintf_s(stderr, "Unknown opcode: %s\n", op);
+        fprintf(stderr, "Unknown opcode: %s\n", op);
         exit(1);
     }
 
@@ -328,7 +309,7 @@ int main(int argc, char** argv)
 {
     if (argc < 3)
     {
-        printf("Usage: assembler file.asm206 file.bin206\n");
+        printf("Usage: assembler <input.asm206> <output.bin206>\n");
         return 1;
     }
 
