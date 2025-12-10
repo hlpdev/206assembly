@@ -20,8 +20,6 @@
 #define _TRUNCATE 0  // ignored on non-Windows
 #endif
 
-typedef uint8_t bool;
-
 typedef struct
 {
     char name[64];
