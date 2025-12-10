@@ -35,6 +35,7 @@ the emulator (`emulator.c`) as independent tools.
 - `aaaaa` = absolute address
 
 > Immediate values range from 0-15 (4-bit)
+
 > Jump targets range from 0-63 (6-bit)
 
 ## Syntax
