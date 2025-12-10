@@ -28,14 +28,14 @@ the emulator (`emulator.c`) as independent tools.
 | `ADD RD, RS` | `0111ddss`     | RD = RD + RS                          |
 | `SUB RD, RS` | `0001ddss`     | RD = RD - RS                          |
 | `SKIPNZ R`   | `0100rr00`     | Skip next instruction if R != 0       |
-| `JMP addr`   | `100aaaaa`     | PC = addr (0-63)                      |
+| `JMP addr`   | `10aaaaaa`     | PC = addr (0-63)                      |
 | `HALT`       | `00000001`     | Stops execution                       |
 
 - `dd` = destination register
 - `ss` = source register
 - `rr` = register for skipnz
 - `iiii` = immediate (0-15)
-- `aaaaa` = absolute address
+- `aaaaaa` = absolute address
 
 > Immediate values range from 0-15 (4-bit)
 
