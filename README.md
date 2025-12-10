@@ -1,3 +1,6 @@
+> [!NOTE]
+> Prebuilt Windows, macOS, and Linux binaries are available in the **Releases** section of this repository.
+
 # ASM206 - 8-bit Assembly Language + Emulator
 
 ASM206 is a small 8-bit assembly language and emulator implemented in C.
