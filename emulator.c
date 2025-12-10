@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,10 +13,6 @@
 #define strncpy_s(dest, destsz, src, count) strncpy((dest), (src), (destsz))
 #define _TRUNCATE 0  // ignored on non-Windows
 #endif
-
-#define TRUE 1
-#define FALSE 0
-typedef uint8_t bool;
 
 enum
 {
@@ -120,7 +117,7 @@ void run_program(struct CPU* cpu, struct Memory* mem)
         // If it's HALT, then exit.
         if (op == OPCODE_HALT)
         {
-            cpu->halted = TRUE;
+            cpu->halted = true;
             break;
         }
 
@@ -153,7 +150,7 @@ void run_program(struct CPU* cpu, struct Memory* mem)
                 break;
             default:
                 fprintf_s(stderr, "Unknown opcode %02X at PC=%zu\n", op, cpu->PC - 1);
-                cpu->halted = TRUE;
+                cpu->halted = true;
                 return;
         }
     }
@@ -212,7 +209,7 @@ int main(int argc, char** argv)
     cpu.C = 0;
     cpu.D = 0;
     cpu.PC = 0;
-    cpu.halted = FALSE;
+    cpu.halted = false;
 
     run_program(&cpu, &mem);
 
