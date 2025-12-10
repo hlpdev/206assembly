@@ -27,6 +27,8 @@ the emulator (`emulator.c`) as independent tools.
 | `LDI R, IMM` | `1100iiii`     | Load immediate (0-15) into a register |
 | `ADD RD, RS` | `0111ddss`     | RD = RD + RS                          |
 | `SUB RD, RS` | `0001ddss`     | RD = RD - RS                          |
+| `MUL RD, RS` | `0010ddss`     | RD = RD * RS                          |
+| `DIV RD, RS` | `0011ddss`     | RD = RD / RS                          |
 | `SKIPNZ R`   | `0100rr00`     | Skip next instruction if R != 0       |
 | `JMP addr`   | `10aaaaaa`     | PC = addr (0-63)                      |
 | `HALT`       | `00000001`     | Stops execution                       |
