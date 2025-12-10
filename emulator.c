@@ -3,17 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Cross-platform secure wrappers
-#if defined(_WIN32) || defined(_WIN64)
-#include <stdio.h>
-#else
-#define fopen_s(fp, filename, mode) ((*(fp) = fopen((filename), (mode))) == NULL)
-#define sscanf_s sscanf
-#define fprintf_s fprintf
-#define strncpy_s(dest, destsz, src, count) strncpy((dest), (src), (destsz))
-#define _TRUNCATE 0  // ignored on non-Windows
-#endif
-
 enum
 {
     OPCODE_ADD = 0b01110000,
@@ -149,7 +138,7 @@ void run_program(struct CPU* cpu, struct Memory* mem)
                 execute_skipnz(cpu, op);
                 break;
             default:
-                fprintf_s(stderr, "Unknown opcode %02X at PC=%zu\n", op, cpu->PC - 1);
+                fprintf(stderr, "Unknown opcode %02X at PC=%zu\n", op, cpu->PC - 1);
                 cpu->halted = true;
                 return;
         }
@@ -159,12 +148,10 @@ void run_program(struct CPU* cpu, struct Memory* mem)
 // Loads the input file into the Memory struct
 struct Memory load_file(const char* path)
 {
-    FILE* f = NULL;
-    fopen_s(&f, path, "rb");
-
+    FILE* f = fopen(path, "rb");
     if (!f)
     {
-        fprintf_s(stderr, "Could not open file %s\n", path);
+        fprintf(stderr, "Could not open file %s\n", path);
         exit(1);
     }
 
@@ -177,14 +164,14 @@ struct Memory load_file(const char* path)
     mem.buffer = malloc(len);
     if (!mem.buffer)
     {
-        fprintf_s(stderr, "Out of memory!\n");
+        fprintf(stderr, "Out of memory!\n");
         fclose(f);
         exit(1);
     }
 
     if (fread(mem.buffer, 1, len, f) != len)
     {
-        fprintf_s(stderr, "File read error!\n");
+        fprintf(stderr, "File read error!\n");
         fclose(f);
         exit(1);
     }
@@ -197,7 +184,7 @@ int main(int argc, char** argv)
 {
     if (argc < 2)
     {
-        printf("Usage: asm206 my_program.bin206\n");
+        printf("Usage: emulator <input.bin206>\n");
         return 1;
     }
 
