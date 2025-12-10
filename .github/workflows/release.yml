@@ -1,4 +1,4 @@
-name: Build & Release ASM206
+name: Build and Release ASM206
 
 on:
   push:
@@ -7,39 +7,40 @@ on:
 
 jobs:
   build:
+    name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
     steps:
-      - uses: actions/checkout@v4
 
-      - name: Build
-        run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            cc assembler.c -o assembler.exe
-            cc emulator.c  -o emulator.exe
-          else
-            cc assembler.c -o assembler
-            cc emulator.c  -o emulator
-          fi
-        shell: bash
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Package Windows
+      - name: Build on Windows
         if: runner.os == 'Windows'
         run: |
-          powershell Compress-Archive -Path assembler.exe, emulator.exe -DestinationPath windows.zip
+          gcc -O2 assembler.c -o assembler.exe
+          gcc -O2 emulator.c -o emulator.exe
+          tar -czvf windows.zip assembler.exe emulator.exe
 
-      - name: Package macOS
-        if: runner.os == 'macOS'
-        run: |
-          tar -czf macos.tar.gz assembler emulator
-
-      - name: Package Linux
+      - name: Build on Linux
         if: runner.os == 'Linux'
         run: |
-          tar -czf linux.tar.gz assembler emulator
+          gcc -O2 assembler.c -o assembler
+          gcc -O2 emulator.c -o emulator
+          chmod +x assembler emulator
+          tar -czvf linux.tar.gz assembler emulator
+
+      - name: Build on macOS
+        if: runner.os == 'macOS'
+        run: |
+          gcc -O2 assembler.c -o assembler
+          gcc -O2 emulator.c -o emulator
+          chmod +x assembler emulator
+          tar -czvf macos.tar.gz assembler emulator
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
@@ -48,5 +49,8 @@ jobs:
           tag_name: latest
           name: Latest Release
           files: |
-            *.zip
-            *.tar.gz
+            windows.zip
+            linux.tar.gz
+            macos.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
